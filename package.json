@@ -1,0 +1,22 @@
+{
+  "name": "fast_ci_cd",
+  "version": "1.0.0",
+  "description": "Projet FAST - Pipeline CI/CD avec Jenkins et Cypress",
+  "main": "index.js",
+  "scripts": {
+    "test": "cypress run",
+    "test:headed": "cypress open"
+  },
+  "keywords": [
+    "cypress",
+    "jenkins",
+    "ci",
+    "cd",
+    "automation"
+  ],
+  "author": "Franck Launay",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "cypress": "^13.6.3"
+  }
+}
