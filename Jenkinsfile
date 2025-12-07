@@ -1,5 +1,5 @@
 pipeline {
-     agent any
+    agent any
 
     options {
         timestamps()
@@ -7,64 +7,56 @@ pipeline {
     }
 
     triggers {
-        // Déclenche la pipeline à chaque push GitHub
         pollSCM('* * * * *')
     }
 
     stages {
 
         stage('Checkout') {
-            agent { label 'master' }
             steps {
-                echo "📥 Récupération du code depuis GitHub..."
+                echo "📥 Checkout du code..."
                 checkout scm
             }
         }
 
         stage('Install Dependencies') {
-            agent {
-                docker {
-                    image 'cypress/included:13.6.3'
-                    args '-u root:root'
-                }
-            }
             steps {
-                echo "📦 Installation des dépendances NPM..."
-                sh 'npm install'
+                echo "📦 Installation des dépendances..."
+                sh """
+                    docker run --rm \
+                        -v \$PWD:/e2e \
+                        -w /e2e \
+                        cypress/included:13.6.3 \
+                        npm install
+                """
             }
         }
 
         stage('Run Cypress Tests') {
-            agent {
-                docker {
-                    image 'cypress/included:13.6.3'
-                    args '-u root:root'
-                }
-            }
             steps {
-                echo "🚀 Lancement des tests Cypress..."
-                sh 'npm test || true'
-            }
-            post {
-                always {
-                    echo "📁 Archivage des artefacts Cypress..."
-
-                    archiveArtifacts artifacts: 'reports/videos/**/*.mp4', allowEmptyArchive: true
-                    archiveArtifacts artifacts: 'reports/screenshots/**/*.png', allowEmptyArchive: true
-                }
+                echo "🚀 Exécution des tests Cypress..."
+                sh """
+                    docker run --rm \
+                        -v \$PWD:/e2e \
+                        -w /e2e \
+                        cypress/included:13.6.3 \
+                        npx cypress run || true
+                """
             }
         }
     }
 
     post {
         always {
-            echo "🧹 Nettoyage terminé."
+            echo "📁 Archivage des artefacts..."
+            archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'cypress/videos/**/*.mp4', allowEmptyArchive: true
         }
         success {
-            echo "✅ Build OK !"
+            echo "✅ Pipeline OK !"
         }
         failure {
-            echo "❌ Erreur dans la pipeline."
+            echo "❌ Pipeline échouée."
         }
     }
 }
