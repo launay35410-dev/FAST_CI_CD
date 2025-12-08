@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     options {
@@ -6,16 +7,15 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    triggers {
-        pollSCM('* * * * *')
-    }
-
     stages {
 
         stage('Checkout') {
             steps {
-                echo "📥 Checkout du code..."
+                echo "📥 Récupération du code..."
                 checkout scm
+
+                echo "📝 Vérification de la config Cypress :"
+                sh "ls -l cypress.config.cjs || true"
             }
         }
 
@@ -25,7 +25,7 @@ pipeline {
                 sh """
                     docker run --rm \
                         --user 0 \
-                        -v \${WORKSPACE}:/e2e \
+                        -v \$(pwd):/e2e \
                         -w /e2e \
                         --ipc=host --shm-size=2g \
                         cypress/included:13.6.3 \
@@ -40,11 +40,11 @@ pipeline {
                 sh """
                     docker run --rm \
                         --user 0 \
-                        -v \${WORKSPACE}:/e2e \
+                        -v \$(pwd):/e2e \
                         -w /e2e \
                         --ipc=host --shm-size=2g \
                         cypress/included:13.6.3 \
-                        npx cypress run --project . --config-file cypress.config.js || true
+                        npx cypress run --config-file cypress.config.cjs || true
                 """
             }
         }
@@ -52,9 +52,9 @@ pipeline {
 
     post {
         always {
-            echo "📁 Archivage..."
-            archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'cypress/videos/**/*.mp4', allowEmptyArchive: true
+            echo "📁 Archivage artifacts Cypress..."
+            archiveArtifacts artifacts: 'reports/screenshots/**/*.png', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'reports/videos/**/*.mp4', allowEmptyArchive: true
         }
         success {
             echo "✅ Pipeline OK !"
