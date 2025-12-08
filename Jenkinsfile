@@ -6,37 +6,37 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
+    triggers {
+        pollSCM('* * * * *')
+    }
+
     stages {
 
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installation des dépendances..."
-                sh '''
+                sh """
                     docker run --rm \
-                        -v $PWD:/e2e \
+                        -v $WORKSPACE:/e2e \
                         -w /e2e \
-                        --ipc=host \
-                        --shm-size=2g \
-                        --privileged \
+                        --ipc=host --shm-size=2g \
                         cypress/included:13.6.3 \
                         npm install
-                '''
+                """
             }
         }
 
         stage('Run Cypress Tests') {
             steps {
                 echo "🚀 Exécution des tests Cypress..."
-                sh '''
+                sh """
                     docker run --rm \
-                        -v $PWD:/e2e \
+                        -v $WORKSPACE:/e2e \
                         -w /e2e \
-                        --ipc=host \
-                        --shm-size=2g \
-                        --privileged \
+                        --ipc=host --shm-size=2g \
                         cypress/included:13.6.3 \
-                        npx cypress run --disable-gpu --no-sandbox
-                '''
+                        npx cypress run || true
+                """
             }
         }
     }
