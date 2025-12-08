@@ -1,23 +1,30 @@
 pipeline {
     agent any
 
+    environment {
+        // CHEMIN RÉEL WINDOWS/WSL VU PAR DOCKER
+        REAL_WS = "/mnt/d/FAST_CI_CD"
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
                 echo "📥 Récupération du code..."
                 checkout scm
-                sh 'echo WORKSPACE=$WORKSPACE'
-                sh 'ls -l $WORKSPACE'
+
+                echo "🔎 Vérification du vrai dossier monté dans Docker :"
+                sh "echo REAL_WS = $REAL_WS"
+                sh "ls -l $REAL_WS"
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "📦 Installation des dépendances..."
+                echo "📦 Installation des dépendances…"
                 sh """
                     docker run --rm --user 0 \
-                        -v $WORKSPACE:/e2e \
+                        -v $REAL_WS:/e2e \
                         -w /e2e \
                         --ipc=host --shm-size=2g \
                         cypress/included:13.6.3 \
@@ -28,10 +35,10 @@ pipeline {
 
         stage('Run Cypress Tests') {
             steps {
-                echo "🚀 Exécution des tests Cypress..."
+                echo "🚀 Exécution des tests Cypress…"
                 sh """
                     docker run --rm --user 0 \
-                        -v $WORKSPACE:/e2e \
+                        -v $REAL_WS:/e2e \
                         -w /e2e \
                         --ipc=host --shm-size=2g \
                         cypress/included:13.6.3 \
@@ -43,9 +50,9 @@ pipeline {
 
     post {
         always {
-            echo "📁 Archivage artifacts Cypress..."
-            archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'cypress/videos/**/*.mp4', allowEmptyArchive: true
+            echo "📁 Archivage artifacts…"
+            archiveArtifacts artifacts: 'reports/screenshots/**/*.png', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'reports/videos/**/*.mp4', allowEmptyArchive: true
         }
     }
 }
