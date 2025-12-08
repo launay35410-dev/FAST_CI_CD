@@ -6,18 +6,21 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    triggers {
-        pollSCM('* * * * *')
-    }
-
     stages {
+
+        stage('Checkout') {
+            steps {
+                echo "📥 Checkout du code..."
+                checkout scm
+            }
+        }
 
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installation des dépendances..."
                 sh """
                     docker run --rm \
-                        -v \$PWD:/e2e \
+                        -v $WORKSPACE:/e2e \
                         -w /e2e \
                         cypress/included:13.6.3 \
                         npm install
@@ -30,7 +33,7 @@ pipeline {
                 echo "🚀 Exécution des tests Cypress..."
                 sh """
                     docker run --rm \
-                        -v \$PWD:/e2e \
+                        -v $WORKSPACE:/e2e \
                         -w /e2e \
                         cypress/included:13.6.3 \
                         npx cypress run || true
