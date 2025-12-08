@@ -12,8 +12,12 @@ pipeline {
             steps {
                 echo "📥 Récupération du code..."
                 checkout scm
-                sh "echo WORKSPACE=$WORKSPACE"
-                sh "ls -l"
+
+                echo "📂 Contenu du workspace :"
+                sh "ls -l ${WORKSPACE}"
+
+                echo "🔎 Config Cypress :"
+                sh "ls -l ${WORKSPACE}/cypress.config.js || ls -l ${WORKSPACE}/cypress.config.cjs"
             }
         }
 
@@ -22,27 +26,27 @@ pipeline {
                 echo "📦 Installation des dépendances..."
 
                 sh """
-                docker run --rm --user 0 \
-                -v ${WORKSPACE}:/work \
-                -w /work \
-                --ipc=host \
-                --shm-size=2g \
-                cypress/included:13.6.3 npm install
+                    docker run --rm --user 0 \
+                        -v ${WORKSPACE}:/e2e \
+                        -w /e2e \
+                        --ipc=host --shm-size=2g \
+                        cypress/included:13.6.3 \
+                        npm install
                 """
             }
         }
 
         stage('Run Cypress Tests') {
             steps {
-                echo "🚀 Exécution des tests Cypress..."
+                echo "🚀 Exécution des tests..."
 
                 sh """
-                docker run --rm --user 0 \
-                -v ${WORKSPACE}:/work \
-                -w /work \
-                --ipc=host \
-                --shm-size=2g \
-                cypress/included:13.6.3 npx cypress run
+                    docker run --rm --user 0 \
+                        -v ${WORKSPACE}:/e2e \
+                        -w /e2e \
+                        --ipc=host --shm-size=2g \
+                        cypress/included:13.6.3 \
+                        npx cypress run
                 """
             }
         }
@@ -51,10 +55,14 @@ pipeline {
     post {
         always {
             echo "📁 Archivage artifacts Cypress..."
-            archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
             archiveArtifacts artifacts: 'cypress/videos/**/*.mp4', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
         }
-        success { echo "✅ Pipeline OK !" }
-        failure { echo "❌ Pipeline échouée." }
+        success {
+            echo "✅ Pipeline OK !"
+        }
+        failure {
+            echo "❌ Pipeline échouée."
+        }
     }
 }
