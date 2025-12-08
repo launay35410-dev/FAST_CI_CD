@@ -12,13 +12,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                echo "📥 Checkout du code..."
-                checkout scm
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installation des dépendances..."
