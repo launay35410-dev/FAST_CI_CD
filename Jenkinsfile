@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            // Image officielle Cypress avec Chrome + Firefox + Edge
+            // Image qui inclut Chrome, Edge et Firefox
             image 'cypress/browsers:node18.16.0-chrome113-ff113-edge'
             args '--entrypoint="" --shm-size=4g --user 0'
         }
@@ -60,11 +60,9 @@ pipeline {
 
     post {
         always {
-            node {
-                echo "📁 Archivage des artefacts..."
-                archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**, reports/junit/*.xml, mochawesome-report/*', allowEmptyArchive: true
-                junit 'reports/junit/*.xml'
-            }
+            echo "📁 Archivage des artefacts..."
+            archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**, reports/junit/*.xml, mochawesome-report/*', allowEmptyArchive: true
+            junit 'reports/junit/*.xml'
         }
         success {
             echo "✅ Build OK !"
