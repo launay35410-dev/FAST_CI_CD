@@ -1,39 +1,32 @@
 pipeline {
-    agent any
 
-    environment {
-        GITHUB_CREDENTIALS = credentials('github')
+    agent {
+        docker {
+            image 'cypress/included:13.6.3'
+            args '--user 0 --shm-size=2g'
+        }
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                echo "📥 Récupération du code…"
+                echo "📥 Récupération du code..."
                 checkout scm
                 sh "ls -l"
             }
         }
 
-        stage('Install Node & Dependencies') {
+        stage('Install dependencies') {
             steps {
-                echo "📦 Installation des dépendances…"
-
-                sh '''
-                    if ! command -v node >/dev/null 2>&1; then
-                        echo "➡ Installation Node.js…"
-                        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-                        apt-get install -y nodejs
-                    fi
-                '''
-
+                echo "📦 Installation des dépendances..."
                 sh "npm install"
             }
         }
 
-        stage('Run Cypress Tests') {
+        stage('Run Cypress tests') {
             steps {
-                echo "🧪 Lancement des tests Cypress…"
+                echo "🧪 Exécution des tests Cypress..."
                 sh "npx cypress run"
             }
         }
@@ -41,7 +34,7 @@ pipeline {
 
     post {
         always {
-            echo "📁 Archivage des artefacts Cypress…"
+            echo "📁 Archivage des artefacts..."
             archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**', allowEmptyArchive: true
         }
     }
