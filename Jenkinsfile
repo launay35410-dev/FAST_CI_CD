@@ -1,12 +1,22 @@
 pipeline {
   agent {
     docker {
-      image 'cypress/included:13.6.3'
-      args '--entrypoint="" --shm-size=2g'
+      image 'cypress/browsers:node18.12.0-chrome112-ff112-edge'
+      args '--entrypoint="" --shm-size=4g --user 0'
     }
   }
 
+  environment {
+    XDG_RUNTIME_DIR = '/tmp/runtime-dir'
+  }
+
   stages {
+    stage('Prepare runtime') {
+      steps {
+        sh 'mkdir -p /tmp/runtime-dir'
+      }
+    }
+
     stage('Checkout') {
       steps {
         echo "📥 Récupération du code..."
@@ -14,47 +24,38 @@ pipeline {
       }
     }
 
-    stage('Install Dependencies') {
+    stage('Install dependencies') {
       steps {
         echo "📦 Installation des dépendances..."
         sh 'npm ci'
       }
     }
 
-    stage('Run Cypress Tests - Multi Browsers') {
+    stage('Run Cypress tests - Multi Browsers') {
       parallel {
         stage('Chrome') {
           steps {
-            echo "🚀 Tests sur Chrome..."
-            sh 'npx cypress run --browser chrome'
+            sh 'npx cypress run --browser chrome --headless'
           }
         }
         stage('Edge') {
           steps {
-            echo "🚀 Tests sur Edge..."
-            sh 'npx cypress run --browser edge'
+            sh 'npx cypress run --browser edge --headless'
           }
         }
         stage('Firefox') {
           steps {
-            echo "🚀 Tests sur Firefox..."
-            sh 'npx cypress run --browser firefox'
+            sh 'npx cypress run --browser firefox --headless'
           }
         }
-      }
-    }
-
-    stage('Archive Results') {
-      steps {
-        echo "📁 Archivage des artefacts Cypress..."
-        archiveArtifacts artifacts: 'cypress/videos/**/*, cypress/screenshots/**/*', allowEmptyArchive: true
       }
     }
   }
 
   post {
     always {
-      echo "🧹 Nettoyage terminé."
+      echo "📁 Archivage des artefacts..."
+      archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**', allowEmptyArchive: true
     }
     success {
       echo "✅ Build OK !"
