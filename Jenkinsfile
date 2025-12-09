@@ -2,7 +2,7 @@ pipeline {
 
     agent {
         docker {
-            image 'cypress/included:13.6.3'
+            image 'cypress/included:13.17.0'
             args '--user 0 --shm-size=2g'
         }
     }
@@ -20,14 +20,14 @@ pipeline {
         stage('Install dependencies') {
             steps {
                 echo "📦 Installation des dépendances..."
-                sh "npm install"
+                sh "npm ci"
             }
         }
 
         stage('Run Cypress tests') {
             steps {
                 echo "🧪 Exécution des tests Cypress..."
-                sh "npx cypress run"
+                sh "cypress run"
             }
         }
     }
