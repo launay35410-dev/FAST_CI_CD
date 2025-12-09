@@ -1,12 +1,23 @@
 pipeline {
     agent {
         docker {
-            image 'cypress/browsers:node-20.9.0-chrome-118.0.5993.70-firefox-118.0.2'
-            args '--shm-size=2g'
+            // Image officielle Cypress avec Chrome + Firefox + Edge
+            image 'cypress/browsers:node18.16.0-chrome113-ff113-edge'
+            args '--entrypoint="" --shm-size=4g --user 0'
         }
     }
 
+    environment {
+        // Fix pour Chrome/Edge/Firefox dans les conteneurs
+        XDG_RUNTIME_DIR = '/tmp/runtime-dir'
+    }
+
     stages {
+        stage('Prepare runtime') {
+            steps {
+                sh 'mkdir -p /tmp/runtime-dir'
+            }
+        }
 
         stage('Checkout') {
             steps {
@@ -25,44 +36,41 @@ pipeline {
 
         stage('Run Cypress tests - Multi Browsers') {
             parallel {
-
                 stage('Chrome') {
                     steps {
-                        echo "🌐 Tests Chrome"
-                        sh '''
-                            npx cypress run \
-                                --browser chrome \
-                                --reporter junit \
-                                --reporter-options "mochaFile=reports/junit/test-results-chrome.xml,toConsole=true"
-                        '''
+                        echo "🚀 Tests sur Chrome..."
+                        sh 'npx cypress run --browser chrome --headless --reporter junit --reporter-options "mochaFile=reports/junit/test-results-chrome.xml,toConsole=true"'
                     }
                 }
-
+                stage('Edge') {
+                    steps {
+                        echo "🚀 Tests sur Edge..."
+                        sh 'npx cypress run --browser edge --headless --reporter junit --reporter-options "mochaFile=reports/junit/test-results-edge.xml,toConsole=true"'
+                    }
+                }
                 stage('Firefox') {
                     steps {
-                        echo "🦊 Tests Firefox"
-                        sh '''
-                            npx cypress run \
-                                --browser firefox \
-                                --reporter junit \
-                                --reporter-options "mochaFile=reports/junit/test-results-firefox.xml,toConsole=true"
-                        '''
+                        echo "🚀 Tests sur Firefox..."
+                        sh 'npx cypress run --browser firefox --headless --reporter junit --reporter-options "mochaFile=reports/junit/test-results-firefox.xml,toConsole=true"'
                     }
                 }
-
             }
         }
     }
 
     post {
         always {
-            echo "📁 Archivage des artefacts..."
-
-            archiveArtifacts artifacts: 'cypress/videos/**', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'cypress/screenshots/**', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'reports/junit/*.xml', allowEmptyArchive: true
-
-            junit 'reports/junit/*.xml'
+            node {
+                echo "📁 Archivage des artefacts..."
+                archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**, reports/junit/*.xml, mochawesome-report/*', allowEmptyArchive: true
+                junit 'reports/junit/*.xml'
+            }
+        }
+        success {
+            echo "✅ Build OK !"
+        }
+        failure {
+            echo "❌ Erreur dans la pipeline."
         }
     }
 }
