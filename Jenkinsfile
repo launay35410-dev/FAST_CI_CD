@@ -1,14 +1,12 @@
 pipeline {
-
     agent {
         docker {
             image 'cypress/included:13.17.0'
-            args '--user 0 --shm-size=2g'
+            args '--entrypoint="" --shm-size=2g'
         }
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo "📥 Récupération du code..."
@@ -24,10 +22,23 @@ pipeline {
             }
         }
 
-        stage('Run Cypress tests') {
-            steps {
-                echo "🧪 Exécution des tests Cypress..."
-                sh "cypress run"
+        stage('Run Cypress tests - Multi Browsers') {
+            parallel {
+                stage('Chrome') {
+                    steps {
+                        sh 'npx cypress run --browser chrome --reporter junit --reporter-options "mochaFile=reports/junit/test-results-chrome.xml,toConsole=true"'
+                    }
+                }
+                stage('Edge') {
+                    steps {
+                        sh 'npx cypress run --browser edge --reporter junit --reporter-options "mochaFile=reports/junit/test-results-edge.xml,toConsole=true"'
+                    }
+                }
+                stage('Firefox') {
+                    steps {
+                        sh 'npx cypress run --browser firefox --reporter junit --reporter-options "mochaFile=reports/junit/test-results-firefox.xml,toConsole=true"'
+                    }
+                }
             }
         }
     }
@@ -35,7 +46,8 @@ pipeline {
     post {
         always {
             echo "📁 Archivage des artefacts..."
-            archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**, reports/junit/*.xml, mochawesome-report/*', allowEmptyArchive: true
+            junit 'reports/junit/*.xml'
         }
     }
 }
