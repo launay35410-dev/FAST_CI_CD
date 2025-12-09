@@ -60,11 +60,9 @@ pipeline {
 
     post {
         always {
-            node {
-                echo "📁 Archivage des artefacts..."
-                archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**, reports/junit/*.xml, mochawesome-report/*', allowEmptyArchive: true
-                junit 'reports/junit/*.xml'
-            }
+            echo "📁 Archivage des artefacts..."
+            archiveArtifacts artifacts: 'cypress/videos/**, cypress/screenshots/**, reports/junit/*.xml, mochawesome-report/*', allowEmptyArchive: true
+            junit 'reports/junit/*.xml'
         }
         success {
             echo "✅ Build OK !"
